@@ -12,6 +12,7 @@ public class Main {
             GUI gui = new GUI();
             gui.init();
             gui.loadDuLieu();
+            gui.loadComboBoxData();
         });
     }
 }

@@ -16,6 +16,7 @@ public class GUI {
     JButton btnXoa = new JButton("Xóa");
     JButton btnSua = new JButton("Sửa");
     JButton btnThoat = new JButton("Thoát");
+    JComboBox<String> cboID = new JComboBox<>(); // tao combobox
 
     public String[] col = {"Mã", "Họ tên", "Tuổi", "Nơi sinh", "GPA"};
     public String[][] row = {};
@@ -63,6 +64,13 @@ public class GUI {
         form.add(lbDiem);
         form.add(txtDiem);
 
+        JLabel lbcbo = new JLabel("Combo ID");
+        lbcbo.setBounds(20, 245, 80, 25);
+        form.add(lbcbo);
+        cboID.setBounds(100, 245, 150, 25);
+        form.add(cboID);
+        form.setVisible(true);
+
         JScrollPane pane = new JScrollPane(table);
         JPanel panel = new JPanel();
         panel.add(pane);
@@ -71,13 +79,13 @@ public class GUI {
         form.setVisible(true);
         form.setLayout(null);
 
-        btnThem.setBounds(20, 280, 90, 25);
+        btnThem.setBounds(20, 295, 90, 25);
         form.add(btnThem);
-        btnXoa.setBounds(20, 315, 90, 25);
+        btnXoa.setBounds(20, 330, 90, 25);
         form.add(btnXoa);
-        btnSua.setBounds(200, 315, 90, 25);
+        btnSua.setBounds(200, 330, 90, 25);
         form.add(btnSua);
-        btnThoat.setBounds(200, 280, 90, 25);
+        btnThoat.setBounds(200, 295, 90, 25);
         form.add(btnThoat);
         form.setVisible(true);
         btnXoa.setEnabled(false);
@@ -86,7 +94,7 @@ public class GUI {
 
     public void loadDuLieu() {
         try {
-            Connection conn = null;
+            Connection conn;
             DAL dal = new DAL();
             conn = dal.getConnection(DB_URL, USER_NAME, PASSWORD);
             Statement statement = conn.createStatement();
@@ -141,122 +149,131 @@ public class GUI {
             }
         });
 
-        // thêm
-        btnThem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    if (!kiemTraRong())
-                        return;
 
-                    Connection conn = null;
-                    DAL dal = new DAL();
-                    int ma = Integer.parseInt(txtMa.getText().trim());
-                    String ten = txtTen.getText().trim();
-                    int tuoi = Integer.parseInt(txtTuoi.getText().trim());
-                    String noisinh = txtNoiSinh.getText().trim();
-                    int diem = Integer.parseInt(txtDiem.getText().trim());
-                    String query = "insert into `sinhvien` (id, name, age, address, gpa) values (?, ?, ?, ?, ?)";
-                    conn = dal.getConnection(DB_URL, USER_NAME, PASSWORD);
-                    PreparedStatement pstm = conn.prepareStatement(query);
-                    pstm.setInt(1, ma);
-                    pstm.setString(2, ten);
-                    pstm.setInt(3, tuoi);
-                    pstm.setString(4, noisinh);
-                    pstm.setInt(5, diem);
-                    int stm = pstm.executeUpdate();
-                    if (stm == 1) {
-                        Object[] row = {ma, ten, tuoi, noisinh, diem};
-                        model = (DefaultTableModel) table.getModel();
-                        model.addRow(row);
-                    }
-                    clearForm();
-                    JOptionPane.showMessageDialog(null, "Thêm thành công", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-                } catch (ConnectException | SQLException ex) {
-                    JOptionPane.showMessageDialog(null, "Lỗi: " + ex.getMessage());
+        // hiển thị id tương ứng trong combobox với row được chọn trong table
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                index = table.getSelectedRow();
+
+                txtMa.setText(table.getValueAt(index, 0).toString());
+                txtTen.setText(table.getValueAt(index, 1).toString());
+                txtTuoi.setText(table.getValueAt(index, 2).toString());
+                txtNoiSinh.setText(table.getValueAt(index, 3).toString());
+                txtDiem.setText(table.getValueAt(index, 4).toString());
+
+                String selectedID = table.getValueAt(index, 0).toString();
+                cboID.setSelectedItem(selectedID);
+
+                btnXoa.setEnabled(true);
+                btnSua.setEnabled(true);
+            }
+        });
+
+        // thêm
+        btnThem.addActionListener(e -> {
+            try {
+                if (kiemTraRong())
+                    return;
+
+                Connection conn;
+                DAL dal = new DAL();
+                int ma = Integer.parseInt(txtMa.getText().trim());
+                String ten = txtTen.getText().trim();
+                int tuoi = Integer.parseInt(txtTuoi.getText().trim());
+                String noisinh = txtNoiSinh.getText().trim();
+                int diem = Integer.parseInt(txtDiem.getText().trim());
+                String query = "insert into `sinhvien` (id, name, age, address, gpa) values (?, ?, ?, ?, ?)";
+                conn = dal.getConnection(DB_URL, USER_NAME, PASSWORD);
+                PreparedStatement pstm = conn.prepareStatement(query);
+                pstm.setInt(1, ma);
+                pstm.setString(2, ten);
+                pstm.setInt(3, tuoi);
+                pstm.setString(4, noisinh);
+                pstm.setInt(5, diem);
+                int stm = pstm.executeUpdate();
+                if (stm == 1) {
+                    Object[] row = {ma, ten, tuoi, noisinh, diem};
+                    model = (DefaultTableModel) table.getModel();
+                    model.addRow(row);
                 }
+                clearForm();
+                JOptionPane.showMessageDialog(null, "Thêm thành công", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            } catch (ConnectException | SQLException ex) {
+                JOptionPane.showMessageDialog(null, "Lỗi: " + ex.getMessage());
             }
         });
 
         // sửa
-        btnSua.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    if (!kiemTraRong())
-                        return;
+        btnSua.addActionListener(e -> {
+            try {
+                if (kiemTraRong())
+                    return;
 
-                    Connection conn = null;
-                    DAL dal = new DAL();
-                    int ma = Integer.parseInt(txtMa.getText().trim());
-                    String ten = txtTen.getText().trim();
-                    int tuoi = Integer.parseInt(txtTuoi.getText().trim());
-                    String noisinh = txtNoiSinh.getText().trim();
-                    int diem = Integer.parseInt(txtDiem.getText().trim());
-                    String query = "update `sinhvien` set name = ?, age = ?, address = ?, gpa = ? where id = ?";
-                    conn = dal.getConnection(DB_URL, USER_NAME, PASSWORD);
-                    PreparedStatement pstm = conn.prepareStatement(query);
-                    pstm.setString(1, ten);
-                    pstm.setInt(2, tuoi);
-                    pstm.setString(3, noisinh);
-                    pstm.setInt(4, diem);
-                    pstm.setInt(5, ma);
-                    int stm = pstm.executeUpdate();
-                    if (stm == 1) {
-                        JOptionPane.showMessageDialog(null, "Cập nhật thông tin hoàn tất", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-                        model.setValueAt(ma, index, 0);
-                        model.setValueAt(ten, index, 1);
-                        model.setValueAt(tuoi, index, 2);
-                        model.setValueAt(noisinh, index, 3);
-                        model.setValueAt(diem, index, 4);
-                        btnThem.setEnabled(true);
-                        txtMa.setEnabled(true);
-                    }
-                    clearForm();
-                } catch (ConnectException | SQLException ex) {
-                    JOptionPane.showInputDialog("Lỗi: " + ex.getMessage());
+                Connection conn;
+                DAL dal = new DAL();
+                int ma = Integer.parseInt(txtMa.getText().trim());
+                String ten = txtTen.getText().trim();
+                int tuoi = Integer.parseInt(txtTuoi.getText().trim());
+                String noisinh = txtNoiSinh.getText().trim();
+                int diem = Integer.parseInt(txtDiem.getText().trim());
+                String query = "update `sinhvien` set name = ?, age = ?, address = ?, gpa = ? where id = ?";
+                conn = dal.getConnection(DB_URL, USER_NAME, PASSWORD);
+                PreparedStatement pstm = conn.prepareStatement(query);
+                pstm.setString(1, ten);
+                pstm.setInt(2, tuoi);
+                pstm.setString(3, noisinh);
+                pstm.setInt(4, diem);
+                pstm.setInt(5, ma);
+                int stm = pstm.executeUpdate();
+                if (stm == 1) {
+                    JOptionPane.showMessageDialog(null, "Cập nhật thông tin hoàn tất", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                    model.setValueAt(ma, index, 0);
+                    model.setValueAt(ten, index, 1);
+                    model.setValueAt(tuoi, index, 2);
+                    model.setValueAt(noisinh, index, 3);
+                    model.setValueAt(diem, index, 4);
+                    btnThem.setEnabled(true);
+                    txtMa.setEnabled(true);
                 }
+                clearForm();
+            } catch (ConnectException | SQLException ex) {
+                JOptionPane.showInputDialog("Lỗi: " + ex.getMessage());
             }
         });
 
         // xóa
-        btnXoa.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                DefaultTableModel model = (DefaultTableModel) table.getModel();
-                int row = table.getSelectedRow();
-                int modelRow = table.convertRowIndexToModel(row);
-                try {
-                    if (index != -1) {
-                        Connection conn = null;
-                        DAL dal = new DAL();
-                        int ma = Integer.parseInt(txtMa.getText().trim());
-                        conn = dal.getConnection(DB_URL, USER_NAME, PASSWORD);
-                        String query = "delete from `sinhvien` where id = ?";
-                        PreparedStatement pstm = conn.prepareStatement(query);
-                        pstm.setInt(1, ma);
-                        pstm.executeUpdate();
-                        pstm.close();
-                        model.removeRow(index);
-                        clearForm();
-                        JOptionPane.showMessageDialog(null, "Đã xóa 1 sinh viên trong bảng", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Vui lòng chọn sinh viên để xóa", "Thông báo", JOptionPane.WARNING_MESSAGE);
-                    }
-                } catch (SQLException | ConnectException ex) {
-                    JOptionPane.showMessageDialog(null, "Lỗi: " + ex.getMessage());
+        btnXoa.addActionListener(e -> {
+            DefaultTableModel model = (DefaultTableModel) table.getModel();
+            int row = table.getSelectedRow();
+            table.convertRowIndexToModel(row);
+            try {
+                if (index != -1) {
+                    Connection conn;
+                    DAL dal = new DAL();
+                    int ma = Integer.parseInt(txtMa.getText().trim());
+                    conn = dal.getConnection(DB_URL, USER_NAME, PASSWORD);
+                    String query = "delete from `sinhvien` where id = ?";
+                    PreparedStatement pstm = conn.prepareStatement(query);
+                    pstm.setInt(1, ma);
+                    pstm.executeUpdate();
+                    pstm.close();
+                    model.removeRow(index);
+                    clearForm();
+                    JOptionPane.showMessageDialog(null, "Đã xóa 1 sinh viên trong bảng", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(null, "Vui lòng chọn sinh viên để xóa", "Thông báo", JOptionPane.WARNING_MESSAGE);
                 }
+            } catch (SQLException | ConnectException ex) {
+                JOptionPane.showMessageDialog(null, "Lỗi: " + ex.getMessage());
             }
         });
 
         // thoát
-        btnThoat.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                int rs = JOptionPane.showConfirmDialog(null, "Thoát chương trình ?");
-                if (rs == 0) {
-                    System.exit(0);
-                }
+        btnThoat.addActionListener(e -> {
+            int rs = JOptionPane.showConfirmDialog(null, "Thoát chương trình ?");
+            if (rs == 0) {
+                System.exit(0);
             }
         });
 
@@ -343,6 +360,25 @@ public class GUI {
         });
     }
 
+    public void loadComboBoxData() {
+        try {
+            Connection conn;
+            DAL dal = new DAL();
+            conn = dal.getConnection(DB_URL, USER_NAME, PASSWORD);
+
+            Statement stm = conn.createStatement();
+            String query = "select id from `sinhvien`";
+            ResultSet rs = stm.executeQuery(query);
+            while (rs.next()) {
+                String id = rs.getString("id");
+                cboID.addItem(id);
+            }
+            conn.close();
+        } catch (SQLException | ConnectException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     // reset
     public void clearForm() {
         txtMa.setText(null);
@@ -356,27 +392,27 @@ public class GUI {
     }
 
     // kiểm tra rỗng
-    private boolean kiemTraRong() {
+    public boolean kiemTraRong() {
         if (txtMa.getText().isEmpty()) {
             JOptionPane.showMessageDialog(null, "Mã sinh viên không được để trống", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            return false;
+            return true;
         }
         if (txtTen.getText().isEmpty()) {
             JOptionPane.showMessageDialog(null, "Tên sinh viên không được để trống", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            return false;
+            return true;
         }
         if (txtTuoi.getText().isEmpty()) {
             JOptionPane.showMessageDialog(null, "Tuổi không được để trống", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            return false;
+            return true;
         }
         if (txtNoiSinh.getText().isEmpty()) {
             JOptionPane.showMessageDialog(null, "Nơi sinh không được để trống", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            return false;
+            return true;
         }
         if (txtDiem.getText().isEmpty()) {
             JOptionPane.showMessageDialog(null, "Điểm không được để trống", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 }
